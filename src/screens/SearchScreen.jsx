@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import ServiceCard from '../components/ServiceCard';
-import { GoogleMap, useJsApiLoader } from '@react-google-maps/api';
+// import { GoogleMap, useJsApiLoader } from '@react-google-maps/api';
 import { supabase } from '../supabaseClient';
 
 const SearchScreen = () => {
@@ -37,7 +37,7 @@ const SearchScreen = () => {
   //   id: 'google-map-script',
   //   googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY
   // });
-  const isLoaded = false; // Set to false to prevent map rendering
+  const isLoaded = false; // Set to false to prevent map rendering for now
 
   const containerStyle = {
     width: '100%',
@@ -97,15 +97,15 @@ const SearchScreen = () => {
           </div>
         ) : (
           <div className="h-[calc(100vh-200px)] bg-secondary rounded-lg">
-            {isLoaded ? (
+            {/* {isLoaded ? (
               <GoogleMap
                 mapContainerStyle={containerStyle}
                 center={center}
                 zoom={10}
               >
-                {/* Markers for beauticians can be added here */}
               </GoogleMap>
-            ) : <p className="text-accent text-center p-8">Loading map...</p>}
+            ) : <p className="text-accent text-center p-8">Map view is currently disabled.</p>} */}
+            <p className="text-accent text-center p-8">Map view is currently disabled.</p>
           </div>
         )}
 
