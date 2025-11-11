@@ -1,31 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
-
-const ConversationListItem = ({ user }) => (
-  <Link to={`/chat/${user.id}`} className="block p-4 rounded-lg hover:bg-gray-100 transition-colors">
-    <div className="flex items-center space-x-4">
-      <div className="relative flex-shrink-0">
-        <img 
-          src={user.avatar_url || `https://i.pravatar.cc/150?u=${user.id}`} 
-          alt={user.full_name} 
-          className="w-12 h-12 rounded-full object-cover"
-        />
-        {/* Online status can be implemented with Supabase Realtime Presence */}
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex justify-between items-center">
-          <p className="font-bold text-accent truncate">{user.full_name}</p>
-          {/* Timestamp of last message can be added here */}
-        </div>
-        <div className="flex justify-between items-start mt-1">
-          <p className="text-sm text-gray-600 truncate">Click to view conversation</p>
-          {/* Unread count can be added here */}
-        </div>
-      </div>
-    </div>
-  </Link>
-);
+import ConversationListItem from '../components/ConversationListItem';
 
 const MessagesScreen = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -35,30 +11,49 @@ const MessagesScreen = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // For this demo, we'll fetch all beauticians for a customer to chat with.
-    // A more advanced implementation would fetch users you already have messages with.
     const fetchConversations = async () => {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_type', 'beautician'); // Fetch all beauticians
+      // In a real application, you would fetch conversations from your backend.
+      // For this demo, we'll use mock data.
+      const mockConversations = [
+        {
+          id: 'convo-1',
+          otherUser: {
+            id: 'user-1',
+            full_name: 'Jane Doe',
+            avatar_url: 'https://i.pravatar.cc/150?u=user-1',
+          },
+          lastMessage: {
+            content: 'Hey, are you available for a booking on Friday?',
+            created_at: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
+          },
+          unreadCount: 2,
+        },
+        {
+          id: 'convo-2',
+          otherUser: {
+            id: 'user-2',
+            full_name: 'John Smith',
+            avatar_url: 'https://i.pravatar.cc/150?u=user-2',
+          },
+          lastMessage: {
+            content: 'Thanks for the great service!',
+            created_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
+          },
+          unreadCount: 0,
+        },
+      ];
 
-      if (!error) {
-        setConversations(data);
-      }
+      setConversations(mockConversations);
       setLoading(false);
     };
 
     fetchConversations();
   }, []);
 
-  const filteredConversations = conversations.filter(user => {
-    const matchesSearch = user.full_name.toLowerCase().includes(searchTerm.toLowerCase());
-    // Placeholder logic for the filter button. This will be expanded when unread counts are available.
-    const matchesFilter = activeFilter === 'Unread' 
-      ? false // Currently, shows no results for "Unread" as we don't track this state yet.
-      : true; // Shows all results for "All".
+  const filteredConversations = conversations.filter(conversation => {
+    const matchesSearch = conversation.otherUser.full_name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesFilter = activeFilter === 'Unread' ? conversation.unreadCount > 0 : true;
 
     return matchesSearch && matchesFilter;
   });
@@ -95,14 +90,14 @@ const MessagesScreen = () => {
       <div className="bg-white rounded-lg shadow-md divide-y">
         {loading ? <p className="p-8 text-center text-gray-500">Loading conversations...</p> : (
           filteredConversations.length > 0 ? (
-            filteredConversations.map(user => <ConversationListItem key={user.id} user={user} />)
+            filteredConversations.map(convo => <ConversationListItem key={convo.id} conversation={convo} />)
           ) : (
             <div className="p-8 text-center text-gray-500">
-              <h3 className="text-lg font-semibold">No Beauticians Found</h3>
-              <p>Your conversations with beauticians will appear here.</p>
+              <h3 className="text-lg font-semibold">No Conversations Found</h3>
+              <p>Your conversations will appear here.</p>
             </div>
-          ) // Closes the inner conditional (filteredConversations.length > 0)
-        )} {/* Closes the outer conditional (loading) */}
+          )
+        )}
       </div>
     </div>
   );

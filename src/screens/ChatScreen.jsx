@@ -1,30 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
-
-const MessageBubble = ({ message }) => {
-  const [currentUser, setCurrentUser] = useState(null);
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => setCurrentUser(user));
-  }, []);
-
-  if (!currentUser) return null;
-
-  const isUser = message.sender_id === currentUser.id;
-
-  return (
-    <div className={`flex items-end gap-2 ${isUser ? 'justify-end' : 'justify-start'}`}>
-      <div className={`max-w-xs md:max-w-md p-3 rounded-lg ${isUser ? 'bg-primary text-white rounded-br-none' : 'bg-gray-200 text-gray-800 rounded-bl-none'}`}>
-        <p>{message.content}</p>
-        <div className={`text-xs mt-1 ${isUser ? 'text-pink-200' : 'text-gray-500'} text-right`}>
-          {new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-          {/* Placeholder for delivery status icons */}
-          {isUser && <span className="ml-1">✓✓</span>}
-        </div>
-      </div>
-    </div>
-  );
-};
+import MessageBubble from '../components/MessageBubble';
 
 const ChatScreen = () => {
   const { userId } = useParams();
@@ -55,23 +32,39 @@ const ChatScreen = () => {
         .or(`(sender_id.eq.${user.id},receiver_id.eq.${userId}),(sender_id.eq.${userId},receiver_id.eq.${user.id})`)
         .order('created_at', { ascending: true });
 
-      if (!messagesError) setMessages(initialMessages);
+      if (!messagesError) {
+        const messagesWithStatus = initialMessages.map(m => ({ ...m, status: 'delivered' }));
+        setMessages(messagesWithStatus);
+      }
     };
 
     setupChat();
 
     // Set up real-time subscription for new messages
-    const subscription = supabase
-      .channel(`chat:${currentUser?.id}:${userId}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
-        setMessages(prevMessages => [...prevMessages, payload.new]);
-      })
-      .subscribe();
+    if (currentUser?.id && userId) {
+      const channelId = [currentUser.id, userId].sort().join(':');
+      const subscription = supabase
+        .channel(`chat:${channelId}`)
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
+          const newMessage = { ...payload.new, status: 'delivered' };
+          setMessages(prevMessages => [...prevMessages, newMessage]);
+        })
+        .subscribe();
 
-    return () => {
-      supabase.removeChannel(subscription);
-    };
+      return () => {
+        supabase.removeChannel(subscription);
+      };
+    }
   }, [userId, currentUser?.id]);
+
+  useEffect(() => {
+    // Simulate marking messages as read when the chat is opened
+    setMessages(prevMessages =>
+      prevMessages.map(msg =>
+        msg.sender_id === userId ? { ...msg, status: 'read' } : msg
+      )
+    );
+  }, [userId]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -87,10 +80,23 @@ const ChatScreen = () => {
       content: newMessage,
     };
 
-    const { error } = await supabase.from('messages').insert([messageData]).select();
-    if (error) console.error('Error sending message:', error);
+    // Add message to local state immediately for better UX
+    const optimisticMessage = {
+      ...messageData,
+      id: Math.random(), // temporary id
+      created_at: new Date().toISOString(),
+      status: 'sent',
+    };
+    setMessages(prevMessages => [...prevMessages, optimisticMessage]);
 
     setNewMessage('');
+
+    const { error } = await supabase.from('messages').insert([messageData]).select();
+    if (error) {
+      console.error('Error sending message:', error);
+      // Optionally, update message status to 'failed'
+      setMessages(prevMessages => prevMessages.map(m => m.id === optimisticMessage.id ? { ...m, status: 'failed' } : m));
+    }
   };
 
   if (!otherUser) {
