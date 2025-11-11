@@ -1,41 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-
-// Sample Data - In a real app, this would come from an API
-const sampleServices = [
-  {
-    id: 1,
-    name: 'Classic Manicure',
-    category: 'Nails',
-    price: 45,
-    duration: '60 min',
-    isActive: true,
-  },
-  {
-    id: 2,
-    name: 'Deep Tissue Massage',
-    category: 'Massage',
-    price: 120,
-    duration: '90 min',
-    isActive: false,
-  },
-  {
-    id: 3,
-    name: 'Hydrating Facial',
-    category: 'Facials',
-    price: 85,
-    duration: '75 min',
-    isActive: true,
-  },
-  {
-    id: 4,
-    name: 'Gel Pedicure',
-    category: 'Nails',
-    price: 65,
-    duration: '75 min',
-    isActive: true,
-  },
-];
+import { supabase } from '../supabaseClient';
 
 const ServiceCard = ({ service }) => {
   return (
@@ -43,12 +8,12 @@ const ServiceCard = ({ service }) => {
       <div>
         <h3 className="font-bold text-lg text-accent">{service.name}</h3>
         <p className="text-sm text-gray-600">{service.category} • {service.duration} • ${service.price}</p>
-        <p className={`text-xs font-medium ${service.isActive ? 'text-green-600' : 'text-red-600'}`}>
-          {service.isActive ? 'Active' : 'Inactive'}
+        <p className={`text-xs font-medium ${service.is_active !== false ? 'text-green-600' : 'text-red-600'}`}>
+          {service.is_active !== false ? 'Active' : 'Inactive'}
         </p>
       </div>
       <div className="flex space-x-2">
-        <Link to={`/beautician/service/edit/${service.id}`} className="btn btn-sm btn-outline">Edit</Link>
+        <Link to={`/beautician/service/${service.id}`} className="btn btn-sm btn-outline">Edit</Link>
         <button className="btn btn-sm btn-outline border-red-500 text-red-500 hover:bg-red-50">Delete</button>
       </div>
     </div>
@@ -58,15 +23,36 @@ const ServiceCard = ({ service }) => {
 const ServiceManagementScreen = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
+  const [services, setServices] = useState([]);
+  const [loading, setLoading] = useState(true);
   const categories = ['All', 'Nails', 'Massage', 'Facials', 'Hair']; // Example categories
 
+  useEffect(() => {
+    const fetchServices = async () => {
+      setLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data, error } = await supabase
+          .from('services')
+          .select('*')
+          .eq('beautician_id', user.id);
+
+        if (!error) {
+          setServices(data);
+        }
+      }
+      setLoading(false);
+    };
+    fetchServices();
+  }, []);
+
   const filteredServices = useMemo(() => {
-    return sampleServices.filter(service => {
+    return services.filter(service => {
       const matchesSearch = service.name.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesCategory = activeCategory === 'All' || service.category === activeCategory;
       return matchesSearch && matchesCategory;
     });
-  }, [searchTerm, activeCategory]);
+  }, [searchTerm, activeCategory, services]);
 
   return (
     <div className="bg-background min-h-screen p-4 sm:p-6 md:p-8">
@@ -101,11 +87,13 @@ const ServiceManagementScreen = () => {
       </div>
 
       <div className="space-y-4">
-        {filteredServices.length > 0 ? (
-          filteredServices.map(service => <ServiceCard key={service.id} service={service} />)
-        ) : (
-          <p className="text-center text-gray-500 py-8">No services found. {activeCategory === 'All' && <Link to="/beautician/service/new" className="text-primary underline">Add your first service!</Link>}</p>
-        )}
+        {loading ? <p>Loading your services...</p> :
+          filteredServices.length > 0 ? (
+            filteredServices.map(service => <ServiceCard key={service.id} service={service} />)
+          ) : (
+            <p className="text-center text-gray-500 py-8">No services found. {activeCategory === 'All' && <Link to="/beautician/service/new" className="text-primary underline">Add your first service!</Link>}</p>
+          )
+        }
       </div>
     </div>
   );

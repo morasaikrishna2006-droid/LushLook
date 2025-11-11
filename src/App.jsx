@@ -151,6 +151,7 @@ const App = () => {
           <Route path="/beautician/profile" element={<ProfileSettingsScreen />} />
         </Route>
         <Route path="/beautician/service/:id" element={<AddEditServiceScreen />} />
+        <Route path="/beautician/service/new" element={<AddEditServiceScreen />} />
       </Route>
 
       {/* Fallback route for the root path */}
