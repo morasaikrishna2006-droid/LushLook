@@ -83,7 +83,7 @@ const BookingsScreen = () => {
       return bookings.filter(b => b.status === 'completed');
     }
     return bookings.filter(b => b.status === (lowerCaseTab === 'upcoming' ? 'confirmed' : lowerCaseTab));
-  }, [activeTab]);
+  }, [activeTab, bookings]);
 
   return (
     <div className="bg-background min-h-screen p-4 sm:p-6 md:p-8">

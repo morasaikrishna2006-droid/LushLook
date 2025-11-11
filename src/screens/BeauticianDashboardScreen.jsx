@@ -97,7 +97,7 @@ const BeauticianDashboardScreen = () => {
                   <p className="font-bold text-accent">{app.service.name}</p>
                   <p className="text-sm text-gray-600">with {app.customer.full_name} at {new Date(app.booking_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                 </div>
-                <Link to={`/beautician/appointment/${app.id}`} className="btn btn-sm btn-outline">View</Link>
+                <Link to={`/booking/${app.id}`} className="btn btn-sm btn-outline">View</Link>
               </div>
             ))}
           </div>
