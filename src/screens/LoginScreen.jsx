@@ -42,6 +42,9 @@ const LoginScreen = () => {
     setError('');
     const { error } = await supabase.auth.signInWithOAuth({
       provider: provider,
+      options: {
+        redirectTo: window.location.origin,
+      }
     });
     if (error) {
       setError(error.message);
