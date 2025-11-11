@@ -1,3 +1,4 @@
+import React from 'react';
 import { expect, afterEach, vi } from 'vitest';
 import { cleanup } from '@testing-library/react';
 import * as matchers from '@testing-library/jest-dom/matchers';
@@ -8,7 +9,7 @@ expect.extend(matchers);
 vi.mock('react-lottie', () => ({
   __esModule: true,
   default: () => {
-    return <div data-testid="lottie-mock" />;
+    return React.createElement('div', { 'data-testid': 'lottie-mock' });
   },
 }));
 
